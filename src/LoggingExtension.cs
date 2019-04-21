@@ -49,10 +49,10 @@ namespace Unity.Microsoft.Logging
 
         protected override void Initialize()
         {
-            Context.Policies.Set(typeof(ILogger), UnityContainer.All, typeof(ResolveDelegateFactory), (ResolveDelegateFactory)GetResolver);
-            Context.Policies.Set(typeof(ILogger<>), UnityContainer.All, typeof(ResolveDelegateFactory), (ResolveDelegateFactory)GetResolverGeneric);
+            Context.Policies.Set(typeof(ILogger),   typeof(ResolveDelegateFactory), (ResolveDelegateFactory)GetResolver);
+            Context.Policies.Set(typeof(ILogger<>), typeof(ResolveDelegateFactory), (ResolveDelegateFactory)GetResolverGeneric);
 
-            Container.RegisterFactory(typeof(ILoggerFactory), UnityContainer.All, (c, t, n) => LoggerFactory, FactoryLifetime.Singleton);
+            Container.RegisterFactory(typeof(ILoggerFactory), (c, t, n) => LoggerFactory, FactoryLifetime.Singleton);
         }
 
         #endregion
@@ -62,14 +62,14 @@ namespace Unity.Microsoft.Logging
 
         public ResolveDelegate<BuilderContext> GetResolver(ref BuilderContext context)
         {
-            return ((ref BuilderContext c) =>
+            return (ref BuilderContext c) =>
             {
                 Type declaringType = c.DeclaringType;
 
                 return null == declaringType
-                ? LoggerFactory.CreateLogger(c.Name ?? UnityContainer.All)
+                ? LoggerFactory.CreateLogger(c.Name ?? string.Empty)
                 : LoggerFactory.CreateLogger(declaringType);
-            });
+            };
         }
 
         public ResolveDelegate<BuilderContext> GetResolverGeneric(ref BuilderContext context)
@@ -77,11 +77,11 @@ namespace Unity.Microsoft.Logging
             var itemType = context.Type.GetTypeInfo().GenericTypeArguments[0];
             var buildMethod = (GenericLoggerFactory)CreateLoggerMethod.MakeGenericMethod(itemType)
                                                                       .CreateDelegate(typeof(GenericLoggerFactory));
-            return ((ref BuilderContext c) =>
+            return (ref BuilderContext c) =>
             {
                 c.Existing = buildMethod(LoggerFactory);
                 return c.Existing;
-            });
+            };
         }
 
         #endregion
